@@ -1,0 +1,12 @@
+{
+  "name": "defi-risk-copilot",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @defirisk/core build && pnpm --filter @defirisk/web dev",
+    "build": "pnpm --filter @defirisk/core build && pnpm -r build",
+    "contracts:build": "cd contracts && cargo build --target wasm32v1-none --release"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

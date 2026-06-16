@@ -1,0 +1,1 @@
+{"root":["./src/config.ts","./src/main.tsx","./src/vite-env.d.ts","./src/components/positionpanel.tsx","./src/components/testtransaction.tsx","./src/components/walletbutton.tsx","./src/lib/transactions.ts","./src/pages/dashboardpage.tsx","./src/wallet/walletprovider.tsx","./src/wallet/kit.ts"],"errors":true,"version":"5.9.3"}
