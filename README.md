@@ -1,6 +1,6 @@
 # Sentinel
 
-A non-custodial Stellar dApp for monitoring your DeFi positions and sending payments on testnet. Connect your wallet, see your XLM balance, send a transaction, and keep an eye on your [Blend Protocol](https://blend.capital) lending positions — all without giving the app access to your funds.
+A non-custodial Stellar dApp for monitoring your DeFi positions and sending payments on testnet. Connect your wallet, see your XLM balance, send a transaction, and keep an eye on your [Blend Protocol](https://blend.capital) lending positions, all without giving the app access to your funds.
 
 Built with React, TypeScript, Vite, Stellar SDK, and Stellar Wallets Kit. Supports Freighter, xBull, and Albedo wallets.
 
