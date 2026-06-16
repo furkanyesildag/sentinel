@@ -1,8 +1,8 @@
 # Sentinel
 
-Sentinel is a Stellar testnet dApp that lets you connect your Freighter wallet, check your XLM balance, and send a payment on the Stellar testnet. It also reads your Blend lending positions via Soroban RPC in read-only mode.
+A non-custodial Stellar dApp for monitoring your DeFi positions and sending payments on testnet. Connect your wallet, see your XLM balance, send a transaction, and keep an eye on your [Blend Protocol](https://blend.capital) lending positions — all without giving the app access to your funds.
 
-Built with React, TypeScript, Vite, and Stellar Wallets Kit.
+Built with React, TypeScript, Vite, Stellar SDK, and Stellar Wallets Kit. Supports Freighter, xBull, and Albedo wallets.
 
 ---
 
