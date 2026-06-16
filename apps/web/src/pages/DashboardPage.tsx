@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { WalletButton } from '../components/WalletButton';
+import { WalletBalance } from '../components/WalletBalance';
 import { PositionPanel } from '../components/PositionPanel';
 import { TestTransaction } from '../components/TestTransaction';
 import { useWallet } from '../wallet/WalletProvider';
 
 export function DashboardPage() {
   const { address } = useWallet();
+  const [balanceRefreshKey, setBalanceRefreshKey] = useState(0);
 
   return (
     <div style={{ minHeight: '100svh', background: 'var(--gray-01)', overflowX: 'hidden' }}>
@@ -34,13 +37,13 @@ export function DashboardPage() {
         {/* ── HERO — only when NOT connected ── */}
         {!address && <HeroSection />}
 
-        {/* ── DASHBOARD — only when connected ── */}
         {address && (
           <>
             <AddressBar />
+            <WalletBalance refreshKey={balanceRefreshKey} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <PositionPanel />
-              <TestTransaction />
+              <TestTransaction onConfirmed={() => setBalanceRefreshKey((k) => k + 1)} />
             </div>
           </>
         )}

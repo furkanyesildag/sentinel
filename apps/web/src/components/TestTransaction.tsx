@@ -18,7 +18,7 @@ function stepIndex(s: TxStatus): number {
   return STEPS.findIndex((x) => x.key === s);
 }
 
-export function TestTransaction() {
+export function TestTransaction({ onConfirmed }: { onConfirmed?: () => void }) {
   const { address } = useWallet();
   const [status, setStatus] = useState<TxStatus>('idle');
   const [txHash, setTxHash] = useState<string | null>(null);
@@ -42,6 +42,7 @@ export function TestTransaction() {
       const hash = await submitSignedTransaction(appConfig, signedTxXdr);
       setTxHash(hash);
       setStatus('done');
+      onConfirmed?.();
     } catch (err: unknown) {
       setStatus('error');
       setError(err instanceof Error ? err.message : 'Transaction failed');

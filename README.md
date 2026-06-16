@@ -1,28 +1,49 @@
-# DeFi Risk Copilot
+# Sentinel
 
-Non-custodial liquidation-warning copilot for Blend lending on Stellar/Soroban.
+**Repository:** [github.com/furkanyesildag/sentinel](https://github.com/furkanyesildag/sentinel)
 
-**Phase 1 (White Belt):** read-only position monitoring, multi-wallet connect, and a harmless test transaction on testnet.
+Non-custodial liquidation guard for [Blend Protocol](https://blend.capital) on Stellar Soroban. **Sentinel** watches your lending positions in real time and warns you before liquidation — read-only, no custody, no auto-actions.
 
-## Prerequisites
+Built for **Stellar Journey to Mastery — Level 1 (White Belt)**.
 
-- Node.js 18+
-- pnpm 9+
-- Rust 1.84+ with `wasm32v1-none` target (for `contracts/` builds)
+---
 
-## Setup
+## Project description
+
+Sentinel is a React dApp that connects to Stellar wallets (Freighter, xBull, Albedo), reads a user's Blend testnet position via Soroban RPC, fetches native XLM balance from Horizon, and demonstrates a full testnet transaction lifecycle (build → sign → submit → confirm).
+
+| Feature | Description |
+|---|---|
+| Multi-wallet connect | Stellar Wallets Kit — Freighter, xBull, Albedo |
+| XLM balance | Fetched from Horizon testnet after connect |
+| Blend positions | Read-only collateral / supplied / borrowed + pool rates |
+| Test transaction | Harmless 1-stroop self-payment on testnet |
+| Network | Stellar **Testnet** only |
+
+---
+
+## Setup (run locally)
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 18+
+- [pnpm](https://pnpm.io/) 9+
+- [Freighter](https://www.freighter.app/) wallet extension (set to **Testnet**)
+- *(Optional)* Rust 1.84+ + `wasm32v1-none` for `contracts/` builds
+
+### 1. Install dependencies
 
 ```bash
+git clone https://github.com/furkanyesildag/sentinel.git
+cd sentinel
 pnpm install
-cp .env.example apps/web/.env
-pnpm dev
 ```
 
-Open http://localhost:5173
+### 2. Configure environment
 
-## Environment variables
-
-Copy `.env.example` to `apps/web/.env`:
+```bash
+cp .env.example apps/web/.env
+```
 
 | Variable | Description |
 |---|---|
@@ -33,7 +54,63 @@ Copy `.env.example` to `apps/web/.env`:
 | `VITE_BLEND_BACKSTOP_ID` | Blend testnet backstop |
 | `VITE_EXPLORER_BASE_URL` | Block explorer base URL |
 
-Pool addresses sourced from [blend-utils/testnet.contracts.json](https://github.com/blend-capital/blend-utils/blob/main/testnet.contracts.json).
+Defaults in `.env.example` work out of the box for testnet.
+
+### 3. Start the dev server
+
+```bash
+pnpm dev
+```
+
+Open **http://localhost:5173**
+
+### 4. Prepare your wallet
+
+1. Open Freighter → switch network to **Testnet**
+2. Fund your account via [Friendbot / Stellar Laboratory](https://laboratory.stellar.org/#account-creator?network=test)
+3. Click **Connect Wallet** → choose Freighter → approve
+
+---
+
+## Screenshots
+
+### Wallet connected + balance displayed
+
+Connected wallet address (header + address bar) and native XLM balance fetched from Horizon testnet.
+
+![Wallet connected and XLM balance displayed](docs/screenshots/01-wallet-connected-balance.png)
+
+### Test transaction — ready to send
+
+Proof of Transaction panel before signing. Sends `0.0000001 XLM` to yourself (1 stroop self-payment).
+
+![Test transaction ready to send](docs/screenshots/02-tx-before-send.png)
+
+### Freighter confirmation (Testnet)
+
+User signs the transaction in Freighter. Network shows **Test Net**.
+
+![Freighter confirm transaction on testnet](docs/screenshots/03-freighter-confirm.png)
+
+### Successful testnet transaction + result
+
+All pipeline steps completed (Build → Sign → Submit → Confirm). Transaction hash and StellarExpert explorer link shown to the user.
+
+![Successful testnet transaction with hash](docs/screenshots/04-tx-success.png)
+
+---
+
+## Level 1 checklist
+
+| Requirement | Status |
+|---|---|
+| Freighter wallet + Stellar Testnet | ✅ |
+| Wallet connect / disconnect | ✅ |
+| Fetch & display XLM balance | ✅ |
+| Send XLM transaction on testnet | ✅ |
+| Show success/failure + tx hash | ✅ |
+
+---
 
 ## Scripts
 
@@ -43,36 +120,30 @@ Pool addresses sourced from [blend-utils/testnet.contracts.json](https://github.
 | `pnpm build` | Build all packages |
 | `pnpm contracts:build` | Build Soroban contracts (Rust + `wasm32v1-none`) |
 
-## White Belt checklist
+---
 
-- [ ] Connect with **Freighter** and **xBull** (or Albedo)
-- [ ] Blend TestnetV2 position renders (or empty state + pool data)
-- [ ] One test transaction confirmed on-chain with hash + explorer link
-- [ ] `pnpm build` passes
-- [ ] `contracts/` workspace compiles (`pnpm contracts:build` with Rust 1.84+)
+## Manual test walkthrough
 
-## Manual test
+1. Set Freighter to **Testnet** and fund via Friendbot.
+2. **Connect wallet** → address appears in header and address bar.
+3. Verify **XLM balance** loads in the Wallet Balance card.
+4. Click **Send test transaction** → confirm in Freighter.
+5. Verify green success box with **transaction hash** and explorer link.
+6. **Disconnect** and reconnect with a second provider (xBull or Albedo).
 
-1. Set Freighter (or xBull) to **Testnet**.
-2. Fund your account via [Friendbot](https://laboratory.stellar.org/#account-creator?network=test).
-3. Connect wallet → verify address appears.
-4. Check position panel: pool reserves always shown; user rows if you have a Blend position.
-5. Click **Send test transaction** → sign 1 stroop self-payment → confirm hash link opens StellarExpert.
-6. Disconnect and connect with a second wallet provider.
-
-To open a Blend test position: use the [Blend testnet UI](https://app.blend.capital) with the same wallet.
+---
 
 ## Repository layout
 
 ```
-packages/core/   Shared network + Blend read helpers (read-only)
-apps/web/        React dApp
-contracts/       Soroban workspace placeholder (Yellow Belt: alert registry)
+packages/core/   Shared network, balance, and Blend read helpers
+apps/web/        React + Vite dApp (Sentinel UI)
+contracts/       Soroban workspace placeholder (Yellow Belt)
+docs/screenshots/ README screenshots
 ```
 
-## Belt status
+---
 
-| Belt | Status |
-|---|---|
-| White | In progress — wallets, Blend read, test tx |
-| Yellow+ | Not started — risk math, alerts, AI copilot |
+## License
+
+Private / educational — Stellar Journey to Mastery submission.
