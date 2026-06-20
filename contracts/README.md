@@ -1,18 +1,26 @@
-# Soroban Contracts (Placeholder)
+# Soroban Contracts — Sentinel Alert Registry
 
-This workspace holds future DeFi Risk Copilot smart contracts.
+## alert_registry
 
-## Current status — White Belt
+A Soroban smart contract that stores per-user liquidation alert thresholds on-chain so the Sentinel backend can query them without any off-chain state.
 
-`alert_registry/` is a minimal hello-world-level crate so the workspace compiles. **No production logic yet.**
+### Functions
 
-## Yellow Belt (planned)
+| Function | Auth required | Description |
+|---|---|---|
+| `set_threshold(user, threshold_bps)` | ✓ (`user.require_auth()`) | Register or update a health-factor warning threshold |
+| `get_threshold(user)` | — | Read the stored threshold; returns `0` if unset |
+| `remove_threshold(user)` | ✓ (`user.require_auth()`) | Delete the threshold entry |
 
-- Alert threshold registry contract
-- On-chain storage of user risk preferences
-- Events on threshold updates
+**Threshold unit:** basis points (bps). `12000` = warn when health factor drops below 120%.
 
-## Build
+### Design
+
+- Persistent storage keyed by `DataKey::Threshold(Address)`
+- `require_auth()` on mutating calls prevents one account from modifying another user's settings
+- Fully tested — 3 unit tests covering set/get, removal, and multi-user isolation
+
+### Build
 
 Requires Rust 1.84+ with the `wasm32v1-none` target:
 
@@ -20,18 +28,18 @@ Requires Rust 1.84+ with the `wasm32v1-none` target:
 rustup target add wasm32v1-none
 
 # from repo root
-pnpm contracts:build
+cargo build --target wasm32v1-none --release --manifest-path contracts/Cargo.toml
 
-# or directly
-cd contracts && cargo build --target wasm32v1-none --release
+# or run tests
+cargo test --manifest-path contracts/Cargo.toml
 ```
 
-## Layout
+### Layout
 
 ```
 contracts/
-├── Cargo.toml          # workspace root
-└── alert_registry/     # placeholder crate
+├── Cargo.toml              # workspace root
+└── alert_registry/
     ├── Cargo.toml
-    └── src/lib.rs
+    └── src/lib.rs          # AlertRegistry contract + tests
 ```

@@ -1,6 +1,13 @@
+/**
+ * TestTransaction — proves the full Stellar transaction lifecycle:
+ *   Build → Sign (StellarWalletsKit.signTransaction) → Submit → Confirm
+ *
+ * Uses @creit.tech/stellar-wallets-kit directly for the signing step.
+ */
+
 import { useState } from 'react';
 import { txExplorerUrl } from '@defirisk/core';
-import { StellarWalletsKit } from '../wallet/kit';
+import { StellarWalletsKit } from '@creit.tech/stellar-wallets-kit/sdk';
 import { useWallet } from '../wallet/WalletProvider';
 import { appConfig } from '../config';
 import { buildSelfPaymentTransaction, submitSignedTransaction } from '../lib/transactions';

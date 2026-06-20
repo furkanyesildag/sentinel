@@ -18,6 +18,8 @@ This is not a yield vault. It is a risk layer for people who already have open b
 
 **AI Risk Copilot (in progress).** The plan is to pair the raw position data with an LLM and a RAG layer built on Blend's documentation and live oracle prices. Instead of showing a health factor number and leaving you to figure it out, the copilot explains it: "If XLM drops 12% from here, your position gets liquidated." That is the part that makes this different from a data dashboard.
 
+**Alert threshold registry.** A deployed Soroban contract (`alert_registry`) stores per-user liquidation warning thresholds on-chain. Users call `set_threshold(address, threshold_bps)` — signed by their wallet — to register the health-factor level at which they want to be warned. The Sentinel backend reads these thresholds with `get_threshold` and fires alerts accordingly.
+
 **Liquidation protection (later, opt-in only).** Once the risk engine is solid and the contracts are audited, the guardian layer will offer one-click or automated protective actions like adding collateral or partial repayment before the liquidation threshold is hit. Strictly opt-in. The default product never moves your funds.
 
 ---

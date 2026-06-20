@@ -1,15 +1,84 @@
+/**
+ * WalletButton — Stellar wallet connectivity using @creit.tech/stellar-wallets-kit
+ *
+ * Directly uses StellarWalletsKit to:
+ *   1. Open the auth modal so the user picks a wallet (Freighter, xBull, Albedo …)
+ *   2. Retrieve the connected address via StellarWalletsKit.getAddress()
+ *   3. Disconnect via StellarWalletsKit.disconnect()
+ *
+ * Address state is kept in WalletProvider's context (via STATE_UPDATED event),
+ * so other components can read it without re-implementing wallet logic.
+ */
+
 import { useState } from 'react';
-import { useWallet, truncateAddress } from '../wallet/WalletProvider';
+import {
+  StellarWalletsKit,
+} from '@creit.tech/stellar-wallets-kit/sdk';
+import { FreighterModule } from '@creit.tech/stellar-wallets-kit/modules/freighter';
+import { xBullModule } from '@creit.tech/stellar-wallets-kit/modules/xbull';
+import { AlbedoModule } from '@creit.tech/stellar-wallets-kit/modules/albedo';
+import { Networks } from '@creit.tech/stellar-wallets-kit/types';
+import { truncateAddress, useWallet } from '../wallet/WalletProvider';
+
+/**
+ * Ensure the kit is initialised exactly once.
+ * WalletProvider also calls this on mount, but we guard here too so the
+ * component works even in isolation.
+ */
+let _kitInitialised = false;
+function ensureKitInitialised(): void {
+  if (_kitInitialised) return;
+  StellarWalletsKit.init({
+    modules: [new FreighterModule(), new xBullModule(), new AlbedoModule()],
+    network: Networks.TESTNET,
+  });
+  _kitInitialised = true;
+}
 
 export function WalletButton() {
-  const { address, connecting, connect, disconnect } = useWallet();
+  // Address is kept in shared WalletProvider context, updated by the
+  // STATE_UPDATED event that StellarWalletsKit fires after authModal / getAddress.
+  const { address } = useWallet();
+  const [connecting, setConnecting] = useState(false);
   const [hoverDisc, setHoverDisc] = useState(false);
 
+  /** Open the wallet picker, then retrieve the address. */
+  async function handleConnect() {
+    setConnecting(true);
+    try {
+      ensureKitInitialised();
+
+      // Step 1 – let the user pick a wallet from the built-in auth modal
+      await StellarWalletsKit.authModal();
+
+      // Step 2 – read the public key from the chosen wallet module
+      await StellarWalletsKit.getAddress();
+
+      // WalletProvider's STATE_UPDATED listener receives the new address and
+      // updates the shared context — no extra setState needed here.
+    } catch (err) {
+      console.error('[WalletButton] connection failed:', err);
+    } finally {
+      setConnecting(false);
+    }
+  }
+
+  /** Disconnect from the currently active wallet. */
+  async function handleDisconnect() {
+    try {
+      await StellarWalletsKit.disconnect();
+      // WalletProvider's DISCONNECT listener clears the shared address.
+    } catch (err) {
+      console.error('[WalletButton] disconnect failed:', err);
+    }
+  }
+
+  /* ── Not connected ─────────────────────────────────────────────────── */
   if (!address) {
     return (
       <button
         type="button"
-        onClick={() => void connect()}
+        onClick={() => void handleConnect()}
         disabled={connecting}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: '8px',
@@ -24,18 +93,23 @@ export function WalletButton() {
           boxShadow: connecting ? 'none' : '0 0 20px rgba(253,218,36,0.2)',
           whiteSpace: 'nowrap',
         }}
-        onMouseEnter={(e) => { if (!connecting) { e.currentTarget.style.background = 'var(--gold-hi)'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = connecting ? 'var(--gray-05)' : 'var(--gold)'; e.currentTarget.style.transform = 'none'; }}
+        onMouseEnter={(e) => {
+          if (!connecting) {
+            e.currentTarget.style.background = 'var(--gold-hi)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = connecting ? 'var(--gray-05)' : 'var(--gold)';
+          e.currentTarget.style.transform = 'none';
+        }}
       >
-        {connecting ? (
-          <><SpinIcon />Connecting…</>
-        ) : (
-          <><WalletIcon />Connect Wallet</>
-        )}
+        {connecting ? <><SpinIcon />Connecting…</> : <><WalletIcon />Connect Wallet</>}
       </button>
     );
   }
 
+  /* ── Connected ──────────────────────────────────────────────────────── */
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
       {/* Address chip */}
@@ -58,10 +132,10 @@ export function WalletButton() {
         {truncateAddress(address)}
       </div>
 
-      {/* Disconnect */}
+      {/* Disconnect button */}
       <button
         type="button"
-        onClick={() => void disconnect()}
+        onClick={() => void handleDisconnect()}
         onMouseEnter={() => setHoverDisc(true)}
         onMouseLeave={() => setHoverDisc(false)}
         title="Disconnect"
