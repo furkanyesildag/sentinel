@@ -2,37 +2,31 @@
  * TestTransaction — proves the full Stellar transaction lifecycle:
  *   Build → Sign (StellarWalletsKit.signTransaction) → Submit → Confirm
  *
- * Uses @creit.tech/stellar-wallets-kit directly for the signing step.
+ * Uses @creit.tech/stellar-wallets-kit directly for the signing step and the
+ * shared TxProgress / ErrorBanner components so its status + errors match the
+ * on-chain contract panel.
  */
 
 import { useState } from 'react';
-import { txExplorerUrl } from '@defirisk/core';
+import { classifyError, txExplorerUrl, type AppError } from '@defirisk/core';
 import { StellarWalletsKit } from '@creit.tech/stellar-wallets-kit/sdk';
 import { useWallet } from '../wallet/WalletProvider';
 import { appConfig } from '../config';
 import { buildSelfPaymentTransaction, submitSignedTransaction } from '../lib/transactions';
+import { TX_STEPS, TxStatusPill, TxStepper } from './TxProgress';
+import { ErrorBanner } from './ErrorBanner';
 
 type TxStatus = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
-
-const STEPS: { key: TxStatus; label: string }[] = [
-  { key: 'building',   label: 'Build' },
-  { key: 'signing',    label: 'Sign' },
-  { key: 'submitting', label: 'Submit' },
-  { key: 'done',       label: 'Confirm' },
-];
-
-function stepIndex(s: TxStatus): number {
-  return STEPS.findIndex((x) => x.key === s);
-}
+const PHASE_INDEX: Record<string, number> = { building: 0, signing: 1, submitting: 2 };
 
 export function TestTransaction({ onConfirmed }: { onConfirmed?: () => void }) {
   const { address } = useWallet();
   const [status, setStatus] = useState<TxStatus>('idle');
   const [txHash, setTxHash] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<AppError | null>(null);
 
-  const activeIdx = stepIndex(status);
   const busy = status === 'building' || status === 'signing' || status === 'submitting';
+  const activeIndex = status in PHASE_INDEX ? PHASE_INDEX[status] : status === 'done' ? TX_STEPS.length : -1;
 
   async function run() {
     if (!address || busy) return;
@@ -52,7 +46,7 @@ export function TestTransaction({ onConfirmed }: { onConfirmed?: () => void }) {
       onConfirmed?.();
     } catch (err: unknown) {
       setStatus('error');
-      setError(err instanceof Error ? err.message : 'Transaction failed');
+      setError(classifyError(err));
     }
   }
 
@@ -73,7 +67,7 @@ export function TestTransaction({ onConfirmed }: { onConfirmed?: () => void }) {
             </p>
           </div>
         </div>
-        <Chip label="Testnet" color="amber" />
+        {(busy || status === 'done') ? <TxStatusPill phase={status === 'done' ? 'success' : 'pending'} /> : <Chip label="Testnet" color="amber" />}
       </div>
 
       {/* Description */}
@@ -83,35 +77,7 @@ export function TestTransaction({ onConfirmed }: { onConfirmed?: () => void }) {
 
       {/* Step tracker */}
       {status !== 'idle' && status !== 'error' && (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0', marginBottom: '24px' }}>
-          {STEPS.map((step, i) => {
-            const done  = status === 'done' || activeIdx > i;
-            const active = activeIdx === i;
-            return (
-              <div key={step.key} style={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : 'none' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
-                  <div style={{
-                    width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '12px', fontWeight: 700,
-                    background: done ? 'var(--mint)' : active ? 'var(--gold)' : 'var(--gray-05)',
-                    color: done || active ? '#000' : 'var(--gray-08)',
-                    transition: 'all 200ms',
-                    boxShadow: active ? '0 0 14px rgba(253,218,36,0.35)' : done ? '0 0 10px rgba(112,225,200,0.3)' : 'none',
-                  }}>
-                    {done ? '✓' : active ? <span className="animate-pulse-slow">{i + 1}</span> : i + 1}
-                  </div>
-                  <span style={{ fontSize: '10px', fontWeight: 600, color: done ? 'var(--mint)' : active ? 'var(--gold)' : 'var(--gray-09)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {step.label}
-                  </span>
-                </div>
-                {i < STEPS.length - 1 && (
-                  <div style={{ flex: 1, height: '2px', background: done ? 'var(--mint)' : 'var(--gray-05)', margin: '0 6px', marginBottom: '20px', transition: 'background 300ms', borderRadius: '1px' }} />
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <TxStepper steps={TX_STEPS} activeIndex={activeIndex} allDone={status === 'done'} />
       )}
 
       {/* CTA */}
@@ -148,11 +114,7 @@ export function TestTransaction({ onConfirmed }: { onConfirmed?: () => void }) {
       )}
 
       {/* Error */}
-      {error && (
-        <div style={{ marginTop: '16px', padding: '12px 16px', background: 'var(--red-bg)', border: '1px solid rgba(229,72,77,0.25)', borderRadius: 'var(--radius-sm)', fontSize: '13px', color: 'var(--red-hi)', lineHeight: 1.5 }}>
-          <strong>Error:</strong> {error}
-        </div>
-      )}
+      {error && status === 'error' && <ErrorBanner error={error} onDismiss={() => setError(null)} />}
 
       {/* Success */}
       {txHash && status === 'done' && (

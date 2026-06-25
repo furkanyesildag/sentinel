@@ -18,6 +18,7 @@ import { FreighterModule } from '@creit.tech/stellar-wallets-kit/modules/freight
 import { xBullModule } from '@creit.tech/stellar-wallets-kit/modules/xbull';
 import { AlbedoModule } from '@creit.tech/stellar-wallets-kit/modules/albedo';
 import { Networks } from '@creit.tech/stellar-wallets-kit/types';
+import { classifyError, type AppError } from '@defirisk/core';
 import { truncateAddress, useWallet } from '../wallet/WalletProvider';
 
 /**
@@ -41,10 +42,12 @@ export function WalletButton() {
   const { address } = useWallet();
   const [connecting, setConnecting] = useState(false);
   const [hoverDisc, setHoverDisc] = useState(false);
+  const [connectError, setConnectError] = useState<AppError | null>(null);
 
   /** Open the wallet picker, then retrieve the address. */
   async function handleConnect() {
     setConnecting(true);
+    setConnectError(null);
     try {
       ensureKitInitialised();
 
@@ -57,7 +60,8 @@ export function WalletButton() {
       // WalletProvider's STATE_UPDATED listener receives the new address and
       // updates the shared context — no extra setState needed here.
     } catch (err) {
-      console.error('[WalletButton] connection failed:', err);
+      // Classify into wallet-not-found / user-rejected / … and surface it.
+      setConnectError(classifyError(err));
     } finally {
       setConnecting(false);
     }
@@ -76,36 +80,48 @@ export function WalletButton() {
   /* ── Not connected ─────────────────────────────────────────────────── */
   if (!address) {
     return (
-      <button
-        type="button"
-        onClick={() => void handleConnect()}
-        disabled={connecting}
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: '8px',
-          padding: '10px 22px',
-          background: connecting ? 'var(--gray-05)' : 'var(--gold)',
-          color: connecting ? 'var(--gray-11)' : '#000',
-          border: 'none', borderRadius: 'var(--radius-sm)',
-          font: '600 14px/1 var(--ff)',
-          cursor: connecting ? 'not-allowed' : 'pointer',
-          transition: 'background 120ms, transform 120ms',
-          letterSpacing: '0.01em',
-          boxShadow: connecting ? 'none' : '0 0 20px rgba(253,218,36,0.2)',
-          whiteSpace: 'nowrap',
-        }}
-        onMouseEnter={(e) => {
-          if (!connecting) {
-            e.currentTarget.style.background = 'var(--gold-hi)';
-            e.currentTarget.style.transform = 'translateY(-1px)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = connecting ? 'var(--gray-05)' : 'var(--gold)';
-          e.currentTarget.style.transform = 'none';
-        }}
-      >
-        {connecting ? <><SpinIcon />Connecting…</> : <><WalletIcon />Connect Wallet</>}
-      </button>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', position: 'relative' }}>
+        <button
+          type="button"
+          onClick={() => void handleConnect()}
+          disabled={connecting}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            padding: '10px 22px',
+            background: connecting ? 'var(--gray-05)' : 'var(--gold)',
+            color: connecting ? 'var(--gray-11)' : '#000',
+            border: 'none', borderRadius: 'var(--radius-sm)',
+            font: '600 14px/1 var(--ff)',
+            cursor: connecting ? 'not-allowed' : 'pointer',
+            transition: 'background 120ms, transform 120ms',
+            letterSpacing: '0.01em',
+            boxShadow: connecting ? 'none' : '0 0 20px rgba(253,218,36,0.2)',
+            whiteSpace: 'nowrap',
+          }}
+          onMouseEnter={(e) => {
+            if (!connecting) {
+              e.currentTarget.style.background = 'var(--gold-hi)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = connecting ? 'var(--gray-05)' : 'var(--gold)';
+            e.currentTarget.style.transform = 'none';
+          }}
+        >
+          {connecting ? <><SpinIcon />Connecting…</> : <><WalletIcon />Connect Wallet</>}
+        </button>
+
+        {connectError && (
+          <span
+            title={connectError.hint ?? connectError.raw}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', maxWidth: '240px', padding: '5px 10px', borderRadius: 'var(--radius-sm)', background: 'var(--red-bg)', border: '1px solid rgba(229,72,77,0.3)', color: 'var(--red-hi)', fontSize: '11px', fontWeight: 600, lineHeight: 1.3 }}
+          >
+            {connectError.title}
+            <button type="button" onClick={() => setConnectError(null)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0, fontSize: '12px' }}>✕</button>
+          </span>
+        )}
+      </div>
     );
   }
 

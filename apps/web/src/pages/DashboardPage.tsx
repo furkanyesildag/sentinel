@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { WalletButton } from '../components/WalletButton';
 import { WalletBalance } from '../components/WalletBalance';
 import { PositionPanel } from '../components/PositionPanel';
+import { AlertRegistryPanel } from '../components/AlertRegistryPanel';
 import { TestTransaction } from '../components/TestTransaction';
 import { useWallet } from '../wallet/WalletProvider';
 
@@ -43,6 +44,7 @@ export function DashboardPage() {
             <WalletBalance refreshKey={balanceRefreshKey} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <PositionPanel />
+              <AlertRegistryPanel />
               <TestTransaction onConfirmed={() => setBalanceRefreshKey((k) => k + 1)} />
             </div>
           </>
@@ -151,7 +153,7 @@ function HeroSection() {
 
 const PREVIEW_FEATURES = [
   { emoji: '📊', title: 'Live Positions', desc: 'Collateral, supplied and borrowed amounts read direct from Soroban RPC.', live: true },
-  { emoji: '🛡️', title: 'Liquidation Guard', desc: 'Health factor tracking with early-warning thresholds — Yellow Belt.', live: false },
+  { emoji: '🛡️', title: 'Alert Registry', desc: 'Set liquidation warning thresholds on-chain via a deployed Soroban contract, with live events.', live: true },
   { emoji: '🤖', title: 'AI Risk Copilot', desc: 'Plain-language risk explanations powered by LLM + RAG.', live: false },
   { emoji: '🔔', title: 'Alerts', desc: 'Telegram and email alerts when you approach liquidation.', live: false },
 ];
