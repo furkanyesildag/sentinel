@@ -1,16 +1,32 @@
 {
-  "alert_registry": {
-    "network": "testnet",
-    "networkPassphrase": "Test SDF Network ; September 2015",
-    "contractId": "CAMPKYYYATXAZQDIPVDGVMPCP53A5BEQYXI3KIP3XO6S5AOUIB3PFNWV",
-    "wasmHash": "1edbb50f5727e75f9ef76f29cae641f9cdb8a814988a5406ead56e4ecd0b6a95",
-    "deployer": "GCFE3FPVH3MXUFKUUXKXEFVK4WHK4MQLFNOTBTNLGHJYM3UQGO535HSV",
-    "transactions": {
-      "wasmUpload": "f2cd12a30765fee29e72b586b77efabac418be52162a4bd1c213e424d67b65de",
-      "create": "77b80136df7f768b6a6e21fe7395fe5cd1add904731a92651ab7c18e92c3ab42",
-      "setThresholdCall": "c67251c00f47796851b382e2091aa306e64f80fa3e299b3b989856c6f826727a"
+  "network": "testnet",
+  "networkPassphrase": "Test SDF Network ; September 2015",
+  "deployer": "GCFE3FPVH3MXUFKUUXKXEFVK4WHK4MQLFNOTBTNLGHJYM3UQGO535HSV",
+  "explorerBase": "https://stellar.expert/explorer/testnet",
+  "contracts": {
+    "alert_registry": {
+      "contractId": "CAMPKYYYATXAZQDIPVDGVMPCP53A5BEQYXI3KIP3XO6S5AOUIB3PFNWV",
+      "wasmHash": "1edbb50f5727e75f9ef76f29cae641f9cdb8a814988a5406ead56e4ecd0b6a95",
+      "transactions": {
+        "wasmUpload": "f2cd12a30765fee29e72b586b77efabac418be52162a4bd1c213e424d67b65de",
+        "create": "77b80136df7f768b6a6e21fe7395fe5cd1add904731a92651ab7c18e92c3ab42",
+        "setThresholdCall": "c67251c00f47796851b382e2091aa306e64f80fa3e299b3b989856c6f826727a"
+      },
+      "explorer": "https://stellar.expert/explorer/testnet/contract/CAMPKYYYATXAZQDIPVDGVMPCP53A5BEQYXI3KIP3XO6S5AOUIB3PFNWV",
+      "deployedAt": "2026-06-25"
     },
-    "explorer": "https://stellar.expert/explorer/testnet/contract/CAMPKYYYATXAZQDIPVDGVMPCP53A5BEQYXI3KIP3XO6S5AOUIB3PFNWV",
-    "deployedAt": "2026-06-25"
+    "risk_monitor": {
+      "contractId": "CCLHYNH4GA6IDBNYHSZNKTXIVOPUIFBP3FP43UCCNRHR5RHDSLIQGA5R",
+      "wasmHash": "2f4743e446aa7add066eb2f0b790230be44f39251cd6f321c12611bad3dc7942",
+      "boundRegistry": "CAMPKYYYATXAZQDIPVDGVMPCP53A5BEQYXI3KIP3XO6S5AOUIB3PFNWV",
+      "transactions": {
+        "create": "887be59aca93812b1eb54b0538ca274449b901985c275c5b3af4a877014a89a2",
+        "init": "a7e38d8dde1b203f5ab3922a6db285b0b2d1e049598d9f5430ddd329246f9aa3",
+        "crossContractAssessCall": "2d442bbfc26d539e039659084b95d9b39edf0efc93cb3144bb77d4cf893cb438"
+      },
+      "explorer": "https://stellar.expert/explorer/testnet/contract/CCLHYNH4GA6IDBNYHSZNKTXIVOPUIFBP3FP43UCCNRHR5RHDSLIQGA5R",
+      "deployedAt": "2026-06-25",
+      "note": "assess() performs an inter-contract call into alert_registry.get_threshold and emits RiskAssessed + AlertTriggered events."
+    }
   }
 }

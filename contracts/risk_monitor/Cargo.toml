@@ -1,12 +1,10 @@
 [package]
-name = "alert-registry"
+name = "risk-monitor"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 
 [lib]
-# `rlib` so other contracts (e.g. risk_monitor) can import the typed client and
-# register this contract in their cross-contract integration tests.
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
@@ -14,6 +12,9 @@ soroban-sdk = { workspace = true }
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
+# Used only in tests to register a real alert_registry in the cross-contract
+# integration test environment.
+alert-registry = { path = "../alert_registry", features = ["testutils"] }
 
 [features]
 testutils = ["soroban-sdk/testutils"]
