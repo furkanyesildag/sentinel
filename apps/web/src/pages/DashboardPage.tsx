@@ -3,6 +3,7 @@ import { WalletButton } from '../components/WalletButton';
 import { WalletBalance } from '../components/WalletBalance';
 import { PositionPanel } from '../components/PositionPanel';
 import { AlertRegistryPanel } from '../components/AlertRegistryPanel';
+import { RiskMonitorPanel } from '../components/RiskMonitorPanel';
 import { TestTransaction } from '../components/TestTransaction';
 import { useWallet } from '../wallet/WalletProvider';
 
@@ -45,6 +46,7 @@ export function DashboardPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <PositionPanel />
               <AlertRegistryPanel />
+              <RiskMonitorPanel />
               <TestTransaction onConfirmed={() => setBalanceRefreshKey((k) => k + 1)} />
             </div>
           </>
