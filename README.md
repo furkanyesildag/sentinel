@@ -12,7 +12,7 @@ It watches your lending positions on Blend, tells you how close you are to liqui
 This is not a yield vault. It is a risk layer for people who already have open borrow positions and want to stay informed before it is too late.
 
 - **Live demo:** **https://son-fawn.vercel.app**
-- **Demo video (1–2 min):** _link to be added_
+- **Demo video (1–2 min):** **▶️ https://youtu.be/gLwm4kT7ldg**
 
 ---
 
@@ -287,8 +287,14 @@ Build, Sign, Submit, Confirm all completed. Transaction hash and StellarExpert l
 
 ## Demo video
 
-A 1–2 minute walkthrough (connect wallet → set threshold → assess risk →
-cross-contract event stream): _link to be added_.
+[![Watch the Sentinel demo](https://img.youtube.com/vi/gLwm4kT7ldg/mqdefault.jpg)](https://youtu.be/gLwm4kT7ldg)
+
+A ~1–2 minute walkthrough: connect a wallet → set an on-chain warning threshold →
+watch the Risk Monitor read it **cross-contract** and classify risk in real time →
+publish an assessment and stream `RiskAssessed` / `AlertTriggered` events,
+verifiable on Stellar Expert.
+
+▶️ **Watch on YouTube: https://youtu.be/gLwm4kT7ldg**
 
 ---
 
