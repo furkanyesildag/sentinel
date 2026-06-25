@@ -9,6 +9,8 @@ export interface AppConfig {
   blendBackstopId: string;
   /** Deployed `alert_registry` Soroban contract id (testnet). */
   alertRegistryId: string;
+  /** Deployed `risk_monitor` contract id — reads alert_registry cross-contract. */
+  riskMonitorId: string;
   explorerBaseUrl: string;
 }
 
@@ -26,6 +28,9 @@ export function loadConfigFromEnv(env: Record<string, string | undefined>): AppC
     alertRegistryId:
       env.VITE_ALERT_REGISTRY_ID ??
       'CAMPKYYYATXAZQDIPVDGVMPCP53A5BEQYXI3KIP3XO6S5AOUIB3PFNWV',
+    riskMonitorId:
+      env.VITE_RISK_MONITOR_ID ??
+      'CCLHYNH4GA6IDBNYHSZNKTXIVOPUIFBP3FP43UCCNRHR5RHDSLIQGA5R',
     explorerBaseUrl:
       env.VITE_EXPLORER_BASE_URL ?? 'https://stellar.expert/explorer/testnet',
   };
