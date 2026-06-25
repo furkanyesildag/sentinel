@@ -1,0 +1,16 @@
+{
+  "alert_registry": {
+    "network": "testnet",
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "contractId": "CAMPKYYYATXAZQDIPVDGVMPCP53A5BEQYXI3KIP3XO6S5AOUIB3PFNWV",
+    "wasmHash": "1edbb50f5727e75f9ef76f29cae641f9cdb8a814988a5406ead56e4ecd0b6a95",
+    "deployer": "GCFE3FPVH3MXUFKUUXKXEFVK4WHK4MQLFNOTBTNLGHJYM3UQGO535HSV",
+    "transactions": {
+      "wasmUpload": "f2cd12a30765fee29e72b586b77efabac418be52162a4bd1c213e424d67b65de",
+      "create": "77b80136df7f768b6a6e21fe7395fe5cd1add904731a92651ab7c18e92c3ab42",
+      "setThresholdCall": "c67251c00f47796851b382e2091aa306e64f80fa3e299b3b989856c6f826727a"
+    },
+    "explorer": "https://stellar.expert/explorer/testnet/contract/CAMPKYYYATXAZQDIPVDGVMPCP53A5BEQYXI3KIP3XO6S5AOUIB3PFNWV",
+    "deployedAt": "2026-06-25"
+  }
+}
