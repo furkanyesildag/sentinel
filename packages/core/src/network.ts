@@ -7,6 +7,8 @@ export interface AppConfig {
   networkPassphrase: string;
   blendPoolId: string;
   blendBackstopId: string;
+  /** Deployed `alert_registry` Soroban contract id (testnet). */
+  alertRegistryId: string;
   explorerBaseUrl: string;
 }
 
@@ -21,6 +23,9 @@ export function loadConfigFromEnv(env: Record<string, string | undefined>): AppC
     blendBackstopId:
       env.VITE_BLEND_BACKSTOP_ID ??
       'CBDVWXT433PRVTUNM56C3JREF3HIZHRBA64NB2C3B2UNCKIS65ZYCLZA',
+    alertRegistryId:
+      env.VITE_ALERT_REGISTRY_ID ??
+      'CAMPKYYYATXAZQDIPVDGVMPCP53A5BEQYXI3KIP3XO6S5AOUIB3PFNWV',
     explorerBaseUrl:
       env.VITE_EXPLORER_BASE_URL ?? 'https://stellar.expert/explorer/testnet',
   };
@@ -39,4 +44,8 @@ export function createRpcServer(config: AppConfig): rpc.Server {
 
 export function txExplorerUrl(config: AppConfig, txHash: string): string {
   return `${config.explorerBaseUrl}/tx/${txHash}`;
+}
+
+export function contractExplorerUrl(config: AppConfig, contractId: string): string {
+  return `${config.explorerBaseUrl}/contract/${contractId}`;
 }
