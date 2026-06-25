@@ -19,10 +19,7 @@
 //!   12000 bps = 120% health factor warning level
 
 #![no_std]
-use soroban_sdk::{
-    contract, contractevent, contractimpl, contracttype,
-    Address, Env,
-};
+use soroban_sdk::{contract, contractevent, contractimpl, contracttype, Address, Env};
 
 // ── Storage key ─────────────────────────────────────────────────────────────
 
@@ -76,7 +73,11 @@ impl AlertRegistry {
             .set(&DataKey::Threshold(user.clone()), &threshold_bps);
 
         // Publish an event so listeners can synchronise state in real time.
-        ThresholdSet { user, bps: threshold_bps }.publish(&env);
+        ThresholdSet {
+            user,
+            bps: threshold_bps,
+        }
+        .publish(&env);
     }
 
     /// Return the stored alert threshold for `user` in basis points.

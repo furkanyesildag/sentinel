@@ -24,8 +24,8 @@
 
 #![no_std]
 use soroban_sdk::{
-    contract, contractevent, contractimpl, contracttype, vec,
-    Address, Env, IntoVal, Symbol, Val, Vec,
+    contract, contractevent, contractimpl, contracttype, vec, Address, Env, IntoVal, Symbol, Val,
+    Vec,
 };
 
 // ── Risk classification ──────────────────────────────────────────────────────
@@ -210,7 +210,13 @@ mod test {
         monitor.init(&admin, &registry_id);
 
         let user = Address::generate(&env);
-        Harness { env, monitor, registry, monitor_id, user }
+        Harness {
+            env,
+            monitor,
+            registry,
+            monitor_id,
+            user,
+        }
     }
 
     #[test]
@@ -249,11 +255,23 @@ mod test {
     fn breach_emits_two_events_from_monitor() {
         let h = setup();
         h.registry.set_threshold(&h.user, &12_000);
-        let before = h.env.events().all().filter_by_contract(&h.monitor_id).events().len();
+        let before = h
+            .env
+            .events()
+            .all()
+            .filter_by_contract(&h.monitor_id)
+            .events()
+            .len();
 
         h.monitor.assess(&h.user, &10_000); // Breached
 
-        let after = h.env.events().all().filter_by_contract(&h.monitor_id).events().len();
+        let after = h
+            .env
+            .events()
+            .all()
+            .filter_by_contract(&h.monitor_id)
+            .events()
+            .len();
         // RiskAssessed + AlertTriggered
         assert_eq!(after - before, 2);
     }
