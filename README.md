@@ -52,6 +52,30 @@ This is not a yield vault. It is a risk layer for people who already have open b
 
 ---
 
+## What it does
+
+**Position monitoring.** Connects to your Stellar wallet and reads your Blend lending position via Soroban RPC. Collateral, borrowed amounts, supplied assets, pool market rates, all pulled directly from the chain without any custody.
+
+**XLM balance display.** Fetches your native XLM balance from Horizon so you always know what you are working with.
+
+**Transaction flow.** Full sign and submit pipeline: build a transaction, send it to your wallet for signing, broadcast it to the network, and confirm it on-chain. The transaction hash and a StellarExpert link are shown once confirmed.
+
+**Alert threshold registry (live on testnet).** A deployed Soroban contract (`alert_registry`) stores per-user liquidation warning thresholds on-chain. Straight from the dashboard you can **read** your stored threshold (`get_threshold`, a free read-only simulation), **write** a new one (`set_threshold`, signed by your wallet with a live Build → Sign → Submit → Confirm tracker), and **remove** it. Every mutating call emits a typed `ThresholdSet` / `ThresholdRemoved` event that the UI streams into a live activity feed and re-reads after each write.
+
+**Risk monitor (inter-contract).** A second deployed contract (`risk_monitor`) reads your threshold from `alert_registry` **cross-contract** and classifies your current health factor as Safe / Warning / Breached. Move the health-factor slider for a live, free, read-only assessment, or publish it on-chain to stream `RiskAssessed` / `AlertTriggered` events.
+
+**AI Risk Copilot (in progress).** The plan is to pair the raw position data with an LLM and a RAG layer built on Blend's documentation and live oracle prices. Instead of showing a health factor number and leaving you to figure it out, the copilot explains it: "If XLM drops 12% from here, your position gets liquidated." That is the part that makes this different from a data dashboard.
+
+**Liquidation protection (later, opt-in only).** Once the risk engine is solid and the contracts are audited, the guardian layer will offer one-click or automated protective actions like adding collateral or partial repayment before the liquidation threshold is hit. Strictly opt-in. The default product never moves your funds.
+
+---
+
+## Why Blend
+
+Blend is the largest lending protocol on Stellar, over $80M TVL as of early 2026, running on immutable Soroban contracts. Borrowers post collateral and take loans, and when their position deteriorates they get liquidated at a market premium, a direct loss. There is no friendly early-warning layer sitting on top of it today. That is the gap Sentinel fills.
+
+---
+
 ## Architecture
 
 A pnpm monorepo with a shared TypeScript core, a React frontend, and two
@@ -223,15 +247,41 @@ Then set `VITE_ALERT_REGISTRY_ID` and `VITE_RISK_MONITOR_ID` in `apps/web/.env`
 
 ## Screenshots
 
-| Mobile responsive | Desktop dashboard |
+### Mobile responsive & desktop
+
+| Mobile dashboard | Desktop dashboard |
 |---|---|
 | ![Mobile](docs/screenshots/06-mobile-dashboard.png) | ![Desktop](docs/screenshots/08-dashboard-desktop.png) |
 
-**Multi-wallet picker** (Freighter · xBull · Albedo):
+Full stacked mobile view (all panels): [`07-mobile-full.png`](docs/screenshots/07-mobile-full.png).
 
-![Wallet options](docs/screenshots/05-wallet-options.png)
+### Multi-wallet picker (Freighter · xBull · Albedo)
 
-Full stacked mobile view: [`07-mobile-full.png`](docs/screenshots/07-mobile-full.png). Earlier Level 2 flow shots live in [`docs/screenshots/`](docs/screenshots/).
+![Wallet options available](docs/screenshots/05-wallet-options.png)
+
+### Wallet connected and XLM balance displayed
+
+![Wallet connected and balance displayed](docs/screenshots/01-wallet-connected-balance.png)
+
+### Test transaction ready to send
+
+![Send test transaction](docs/screenshots/02-tx-before-send.png)
+
+### Freighter signing the transaction on Testnet
+
+![Freighter confirm](docs/screenshots/03-freighter-confirm.png)
+
+### Transaction confirmed on Stellar Testnet
+
+Build, Sign, Submit, Confirm all completed. Transaction hash and StellarExpert link shown after confirmation.
+
+![Transaction confirmed](docs/screenshots/04-tx-success.png)
+
+### CI pipeline & test output
+
+| CI/CD passing | Test suite |
+|---|---|
+| ![CI](docs/screenshots/10-ci-pipeline.png) | ![Tests](docs/screenshots/09-test-output.png) |
 
 ---
 
