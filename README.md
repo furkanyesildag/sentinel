@@ -11,7 +11,7 @@ It watches your lending positions on Blend, tells you how close you are to liqui
 
 This is not a yield vault. It is a risk layer for people who already have open borrow positions and want to stay informed before it is too late.
 
-- **Live demo:** _deploying — see [Deployment](#deployment)_
+- **Live demo:** **https://son-fawn.vercel.app**
 - **Demo video (1–2 min):** _link to be added_
 
 ---
@@ -177,8 +177,9 @@ Open [http://localhost:5173](http://localhost:5173), switch your wallet to **Tes
 
 ### Frontend (Vercel)
 
-The repo ships a [`vercel.json`](vercel.json) configured for the pnpm monorepo
-(build the core package, then the web app; output `apps/web/dist`). Deploy with:
+Deployed at **https://son-fawn.vercel.app**. The repo ships a
+[`vercel.json`](vercel.json) configured for the pnpm monorepo (build the core
+package, then the web app; output `apps/web/dist`). Deploy with:
 
 ```bash
 vercel --prod        # or import the GitHub repo in the Vercel dashboard
