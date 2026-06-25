@@ -36,6 +36,26 @@ export function loadConfigFromEnv(env: Record<string, string | undefined>): AppC
   };
 }
 
+/**
+ * Validate a loaded config and return a list of human-readable warnings
+ * (empty when everything looks right). Non-throwing so a single bad env var
+ * never hard-crashes the app — callers decide how loudly to surface issues.
+ */
+export function validateConfig(config: AppConfig): string[] {
+  const warnings: string[] = [];
+  const isContractId = (id: string) => /^C[A-Z2-7]{55}$/.test(id);
+  const isUrl = (u: string) => /^https?:\/\//.test(u);
+
+  if (!isContractId(config.alertRegistryId)) warnings.push(`alertRegistryId "${config.alertRegistryId}" is not a valid contract id`);
+  if (!isContractId(config.riskMonitorId)) warnings.push(`riskMonitorId "${config.riskMonitorId}" is not a valid contract id`);
+  if (!isContractId(config.blendPoolId)) warnings.push(`blendPoolId "${config.blendPoolId}" is not a valid contract id`);
+  if (!isUrl(config.sorobanRpcUrl)) warnings.push('sorobanRpcUrl must be an http(s) URL');
+  if (!isUrl(config.horizonUrl)) warnings.push('horizonUrl must be an http(s) URL');
+  if (!config.networkPassphrase) warnings.push('networkPassphrase is empty');
+
+  return warnings;
+}
+
 export function createNetwork(config: AppConfig): Network {
   return {
     rpc: config.sorobanRpcUrl,
