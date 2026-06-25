@@ -4,6 +4,8 @@
   "scripts": {
     "dev": "pnpm --filter @defirisk/core build && pnpm --filter @defirisk/web dev",
     "build": "pnpm --filter @defirisk/core build && pnpm -r build",
+    "test": "pnpm --filter @defirisk/core build && pnpm -r --if-present test",
+    "test:contracts": "cd contracts && cargo test",
     "contracts:build": "cd contracts && cargo build --target wasm32v1-none --release"
   },
   "engines": {
