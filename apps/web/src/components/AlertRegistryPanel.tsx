@@ -30,6 +30,7 @@ import {
   type ThresholdEvent,
 } from '@defirisk/core';
 import { appConfig } from '../config';
+import { track } from '../lib/analytics';
 import { submitSignedTransaction } from '../lib/transactions';
 import { truncateAddress, useWallet } from '../wallet/WalletProvider';
 import { ErrorBanner } from './ErrorBanner';
@@ -153,6 +154,7 @@ export function AlertRegistryPanel() {
       const hash = await submitSignedTransaction(appConfig, signedTxXdr);
       setTxHash(hash);
       setPhase('success');
+      track('threshold_set', { address, action: kind });
 
       // State synchronisation: re-read the stored value and pull fresh events.
       await Promise.all([refreshThreshold(), refreshEvents()]);

@@ -19,6 +19,7 @@ import { xBullModule } from '@creit.tech/stellar-wallets-kit/modules/xbull';
 import { AlbedoModule } from '@creit.tech/stellar-wallets-kit/modules/albedo';
 import { Networks } from '@creit.tech/stellar-wallets-kit/types';
 import { classifyError, type AppError } from '@defirisk/core';
+import { track } from '../lib/analytics';
 import { truncateAddress, useWallet } from '../wallet/WalletProvider';
 
 /**
@@ -55,12 +56,14 @@ export function WalletButton() {
       await StellarWalletsKit.authModal();
 
       // Step 2 – read the public key from the chosen wallet module
-      await StellarWalletsKit.getAddress();
+      const { address: addr } = await StellarWalletsKit.getAddress();
+      track('wallet_connected', { address: addr, wallet: StellarWalletsKit.selectedModule?.productId });
 
       // WalletProvider's STATE_UPDATED listener receives the new address and
       // updates the shared context — no extra setState needed here.
     } catch (err) {
       // Classify into wallet-not-found / user-rejected / … and surface it.
+      track('wallet_connect_failed');
       setConnectError(classifyError(err));
     } finally {
       setConnecting(false);

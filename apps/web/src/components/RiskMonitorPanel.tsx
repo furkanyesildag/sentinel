@@ -27,6 +27,7 @@ import {
   type RiskLevel,
 } from '@defirisk/core';
 import { appConfig } from '../config';
+import { track } from '../lib/analytics';
 import { submitSignedTransaction } from '../lib/transactions';
 import { truncateAddress, useWallet } from '../wallet/WalletProvider';
 import { ErrorBanner } from './ErrorBanner';
@@ -116,6 +117,7 @@ export function RiskMonitorPanel() {
       const hash = await submitSignedTransaction(appConfig, signedTxXdr);
       setTxHash(hash);
       setPhase('success');
+      track('risk_published', { address, level });
       await refreshEvents();
     } catch (err) {
       setWriteError(classifyError(err));
