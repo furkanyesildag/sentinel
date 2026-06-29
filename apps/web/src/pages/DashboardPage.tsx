@@ -4,15 +4,22 @@ import { WalletBalance } from '../components/WalletBalance';
 import { PositionPanel } from '../components/PositionPanel';
 import { AlertRegistryPanel } from '../components/AlertRegistryPanel';
 import { RiskMonitorPanel } from '../components/RiskMonitorPanel';
+import { GuardianPanel } from '../components/GuardianPanel';
+import { ActivityPanel } from '../components/ActivityPanel';
 import { TestTransaction } from '../components/TestTransaction';
+import { FeedbackButton } from '../components/FeedbackButton';
+import { Onboarding, useOnboarding } from '../components/Onboarding';
 import { useWallet } from '../wallet/WalletProvider';
 
 export function DashboardPage() {
   const { address } = useWallet();
   const [balanceRefreshKey, setBalanceRefreshKey] = useState(0);
+  const onboarding = useOnboarding();
 
   return (
     <div style={{ minHeight: '100svh', background: 'var(--gray-01)', overflowX: 'hidden' }}>
+      <Onboarding open={onboarding.open} onClose={onboarding.close} />
+      <FeedbackButton />
 
       {/* ── Ambient glow ── */}
       <div style={{ position: 'fixed', top: '-200px', left: '50%', transform: 'translateX(-50%)', width: '700px', height: '500px', background: 'radial-gradient(ellipse at 50% 0%, rgba(253,218,36,0.07) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
@@ -47,6 +54,8 @@ export function DashboardPage() {
               <PositionPanel />
               <AlertRegistryPanel />
               <RiskMonitorPanel />
+              <GuardianPanel />
+              <ActivityPanel />
               <TestTransaction onConfirmed={() => setBalanceRefreshKey((k) => k + 1)} />
             </div>
           </>
@@ -70,7 +79,8 @@ export function DashboardPage() {
             {' · '}Non-custodial · Read-only
           </p>
           <p style={{ margin: 0, fontSize: '12px', color: 'var(--gray-08)' }}>
-            Sentinel v0.1 · <span style={{ color: 'var(--gold-lo)' }}>Testnet</span>
+            <button type="button" onClick={onboarding.reopen} style={{ background: 'none', border: 'none', color: 'var(--gray-09)', cursor: 'pointer', font: 'inherit', padding: 0, textDecoration: 'underline' }}>How it works</button>
+            {' · '}Sentinel v0.2 · <span style={{ color: 'var(--gold-lo)' }}>Testnet</span>
           </p>
         </footer>
       </div>
