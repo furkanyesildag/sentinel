@@ -2,8 +2,8 @@
 
 [![CI](https://github.com/furkanyesildag/sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/furkanyesildag/sentinel/actions/workflows/ci.yml)
 ![Network](https://img.shields.io/badge/network-Stellar%20Testnet-7b61ff)
-![Contracts](https://img.shields.io/badge/Soroban-2%20contracts-05a2c2)
-![Tests](https://img.shields.io/badge/tests-34%20passing-3fd07f)
+![Contracts](https://img.shields.io/badge/Soroban-3%20contracts-05a2c2)
+![Tests](https://img.shields.io/badge/tests-44%20passing-3fd07f)
 
 Borrowers on Blend Protocol can lose their collateral to liquidation without any warning. Sentinel fixes that.
 
@@ -18,7 +18,24 @@ This is not a yield vault. It is a risk layer for people who already have open b
 
 ## Requirements checklist
 
-### Level 3 — Advanced contracts + production-ready dApp
+### Level 4 — Production MVP + real users
+
+| Requirement | Where |
+|---|---|
+| Production-ready MVP | 3 contracts + polished dashboard, live on Vercel |
+| New on-chain functionality | `guardian` — opt-in, non-custodial liquidation protection ([`guardian/src/lib.rs`](contracts/guardian/src/lib.rs)) |
+| Mobile responsive UI | [mobile screenshot](docs/screenshots/14-mobile-l4.png) |
+| Loading + error states | skeletons · `classifyError` + `ErrorBanner` · `ErrorBoundary` |
+| User onboarding | first-run guided overlay ([`Onboarding`](apps/web/src/components/Onboarding.tsx)) |
+| Feedback collection | in-app feedback widget ([`FeedbackButton`](apps/web/src/components/FeedbackButton.tsx)) |
+| Monitoring + analytics | Vercel Web Analytics + `/api/track` ([`api/track.ts`](api/track.ts)) + on-chain Network Activity dashboard ([screenshot](docs/screenshots/12-analytics.png)) |
+| Proof of user wallet interactions | unique-wallet count read live from contract events ([`fetchActivityStats`](packages/core/src/contract.ts), [`ActivityPanel`](apps/web/src/components/ActivityPanel.tsx)) |
+| Tests (contracts + frontend) | 16 Rust + 28 Vitest = **44** ([test output](docs/screenshots/09-test-output.png)) |
+| Contract deployment address | `guardian` [`CCBOH4QO…MGTK`](https://stellar.expert/explorer/testnet/contract/CCBOH4QO4UQ5MR4EJV2VOWOGP3S5J2T5ZPXQHNXSJJKDTVYO7UKQMGTK) |
+| Tx hash for contract interaction | `protect` [`ceb5b5e2…0bbf1`](https://stellar.expert/explorer/testnet/tx/ceb5b5e2a151207c8a690371bde61edbb6fc6678978114ace628532f2ef0bbf1) — released a 2 XLM reserve |
+
+<details>
+<summary><b>Level 3 — Advanced contracts + production-ready dApp</b></summary>
 
 | Requirement | Where |
 |---|---|
@@ -34,6 +51,8 @@ This is not a yield vault. It is a risk layer for people who already have open b
 | Documentation & demo | this README + screenshots + video |
 | Contract deployment address | [`CCLHYNH4…GA5R`](https://stellar.expert/explorer/testnet/contract/CCLHYNH4GA6IDBNYHSZNKTXIVOPUIFBP3FP43UCCNRHR5RHDSLIQGA5R) |
 | Tx hash for contract interaction | [`2d442bbf…cb438`](https://stellar.expert/explorer/testnet/tx/2d442bbfc26d539e039659084b95d9b39edf0efc93cb3144bb77d4cf893cb438) (cross-contract `assess`) |
+
+</details>
 
 <details>
 <summary><b>Level 2 — multi-wallet, deployed contract, events</b></summary>
@@ -66,7 +85,9 @@ This is not a yield vault. It is a risk layer for people who already have open b
 
 **AI Risk Copilot (in progress).** The plan is to pair the raw position data with an LLM and a RAG layer built on Blend's documentation and live oracle prices. Instead of showing a health factor number and leaving you to figure it out, the copilot explains it: "If XLM drops 12% from here, your position gets liquidated." That is the part that makes this different from a data dashboard.
 
-**Liquidation protection (later, opt-in only).** Once the risk engine is solid and the contracts are audited, the guardian layer will offer one-click or automated protective actions like adding collateral or partial repayment before the liquidation threshold is hit. Strictly opt-in. The default product never moves your funds.
+**Liquidation guardian (live on testnet, opt-in).** A third deployed contract (`guardian`) turns the warning into action. You sign a protection policy and fund an XLM reserve held by the contract. When your health factor breaches the policy threshold, a permissionless `protect` call releases the reserve back to you so you can defend the position before liquidation. It is non-custodial by construction: the reserve can only ever move to you, never anywhere else, and a keeper can trigger protection but cannot redirect funds. (In production the trigger is oracle-backed and the protective action repays Blend directly; the MVP releases the reserve and proves the full policy / reserve / release cycle on-chain.)
+
+**Network activity + analytics.** A built-in dashboard reads events from all three contracts and shows live on-chain usage: unique wallets, transactions, protections and a recent-interactions feed. The unique-wallet count is verifiable proof of real user interactions, straight from the chain.
 
 ---
 
@@ -78,16 +99,18 @@ Blend is the largest lending protocol on Stellar, over $80M TVL as of early 2026
 
 ## Architecture
 
-A pnpm monorepo with a shared TypeScript core, a React frontend, and two
-Soroban contracts that talk to each other on-chain.
+A pnpm monorepo with a shared TypeScript core, a React frontend, three Soroban
+contracts that compose on-chain, and a serverless analytics endpoint.
 
 ```
 sentinel/
 ├── contracts/                 # Rust / Soroban workspace
 │   ├── alert_registry/        # stores per-user warning thresholds + events
-│   └── risk_monitor/          # reads alert_registry (inter-contract) + classifies risk
+│   ├── risk_monitor/          # reads alert_registry (inter-contract) + classifies risk
+│   └── guardian/              # opt-in, non-custodial liquidation protection
 ├── packages/core/             # framework-agnostic TS: RPC, contract clients, errors
-├── apps/web/                  # React + Vite dashboard
+├── apps/web/                  # React + Vite dashboard (+ onboarding, feedback, analytics)
+├── api/track.ts               # Vercel Edge analytics/monitoring sink
 └── .github/workflows/ci.yml   # CI: contracts + web
 ```
 
@@ -109,15 +132,17 @@ writes are built locally and signed by the user's wallet.
 
 | Contract | Address | Role |
 |---|---|---|
-| `alert_registry` | [`CAMPKYYYATXAZQDIPVDGVMPCP53A5BEQYXI3KIP3XO6S5AOUIB3PFNWV`](https://stellar.expert/explorer/testnet/contract/CAMPKYYYATXAZQDIPVDGVMPCP53A5BEQYXI3KIP3XO6S5AOUIB3PFNWV) | Stores per-user thresholds; emits `ThresholdSet` / `ThresholdRemoved` |
-| `risk_monitor` | [`CCLHYNH4GA6IDBNYHSZNKTXIVOPUIFBP3FP43UCCNRHR5RHDSLIQGA5R`](https://stellar.expert/explorer/testnet/contract/CCLHYNH4GA6IDBNYHSZNKTXIVOPUIFBP3FP43UCCNRHR5RHDSLIQGA5R) | Reads the registry **cross-contract**, classifies risk; emits `RiskAssessed` / `AlertTriggered` |
+| `alert_registry` | [`CAMPKYYY…PFNWV`](https://stellar.expert/explorer/testnet/contract/CAMPKYYYATXAZQDIPVDGVMPCP53A5BEQYXI3KIP3XO6S5AOUIB3PFNWV) | Stores per-user thresholds; emits `ThresholdSet` / `ThresholdRemoved` |
+| `risk_monitor` | [`CCLHYNH4…GA5R`](https://stellar.expert/explorer/testnet/contract/CCLHYNH4GA6IDBNYHSZNKTXIVOPUIFBP3FP43UCCNRHR5RHDSLIQGA5R) | Reads the registry **cross-contract**, classifies risk; emits `RiskAssessed` / `AlertTriggered` |
+| `guardian` | [`CCBOH4QO…MGTK`](https://stellar.expert/explorer/testnet/contract/CCBOH4QO4UQ5MR4EJV2VOWOGP3S5J2T5ZPXQHNXSJJKDTVYO7UKQMGTK) | Opt-in protection: holds an XLM reserve, releases it on breach; emits `PolicySet` / `ReserveFunded` / `Protected` |
 
 Verifiable transactions:
 
 | Tx | Hash |
 |---|---|
+| `guardian` `protect` (released a 2 XLM reserve) | [`ceb5b5e2…0bbf1`](https://stellar.expert/explorer/testnet/tx/ceb5b5e2a151207c8a690371bde61edbb6fc6678978114ace628532f2ef0bbf1) |
 | Cross-contract `assess` (risk_monitor → alert_registry) | [`2d442bbf…cb438`](https://stellar.expert/explorer/testnet/tx/2d442bbfc26d539e039659084b95d9b39edf0efc93cb3144bb77d4cf893cb438) |
-| `risk_monitor` deploy | [`887be59a…89a2`](https://stellar.expert/explorer/testnet/tx/887be59aca93812b1eb54b0538ca274449b901985c275c5b3af4a877014a89a2) |
+| `guardian` `fund_reserve` + `set_policy` | [`f5663bb9…0bbb`](https://stellar.expert/explorer/testnet/tx/f5663bb98f937348b941fd221b190201f39a8fa6623946eadad0469d345f0bbb) |
 | `set_threshold` call | [`c67251c0…727a`](https://stellar.expert/explorer/testnet/tx/c67251c00f47796851b382e2091aa306e64f80fa3e299b3b989856c6f826727a) |
 
 Full record: [`contracts/deployments.json`](contracts/deployments.json).
@@ -154,6 +179,18 @@ address is bound at `init` and is updatable only by the admin (`require_auth`).
 | `set_registry(registry)` | admin | re-point the bound registry |
 | `get_registry() → Address` / `get_admin() → Address` | — | views |
 
+**guardian**
+
+| Function | Auth | Notes |
+|---|---|---|
+| `init(admin, token)` | once | binds the reserve asset (native XLM SAC) |
+| `set_policy(user, threshold_bps)` | wallet sig | beneficiary fixed to the caller |
+| `fund_reserve(user, amount)` / `withdraw_reserve(user, amount)` | wallet sig | real SAC token transfers |
+| `protect(user, current_hf_bps) → i128` | — (permissionless) | releases the reserve when below threshold; emits `Protected` |
+| `get_policy` / `get_reserve` / `has_policy` | — | views |
+
+**Non-custodial guarantee.** The reserve can only ever move to the beneficiary the user fixed at policy time, or back via `withdraw_reserve`. `protect` is permissionless so a keeper can trigger it, but the contract enforces that funds never go anywhere the user did not sign for.
+
 ---
 
 ## CI/CD
@@ -174,10 +211,26 @@ pnpm test            # frontend — Vitest (core + web)
 pnpm test:contracts  # contracts — cargo test
 ```
 
-- **Contracts (10):** set/get/remove + event emission for `alert_registry`; a real cross-contract integration harness + risk classification for `risk_monitor`.
-- **Frontend (24):** `classifyError` across all three error kinds + heuristics, config validation, bps/percent + risk-level helpers, and `ErrorBanner` / `TxStatusPill` render tests (jsdom + Testing Library).
+- **Contracts (16):** `alert_registry` set/get/remove + events; `risk_monitor` cross-contract integration harness + classification; `guardian` policy / reserve / protect / withdraw with a mock Stellar Asset Contract.
+- **Frontend (28):** `classifyError` across all three error kinds + heuristics, config validation, bps/percent + risk-level + stroops helpers, and `ErrorBanner` / `TxStatusPill` render tests (jsdom + Testing Library).
 
 ![Test output](docs/screenshots/09-test-output.png)
+
+---
+
+## Analytics & monitoring
+
+Three layers, no third-party account required to run it:
+
+- **On-chain Network Activity dashboard** — reads events from all three contracts and shows unique wallets, transactions, protections and a live interaction feed. The unique-wallet count is verifiable, on-chain **proof of real user interactions**.
+- **Vercel Web Analytics** — pageviews / visitors via `@vercel/analytics`.
+- **Event + error sink** — a fire-and-forget [`track()`](apps/web/src/lib/analytics.ts) sends product events (wallet connects, threshold sets, protections, errors) to the [`/api/track`](api/track.ts) Vercel Edge function, logged in Vercel Observability.
+
+![Network activity analytics](docs/screenshots/12-analytics.png)
+
+### User onboarding & feedback
+
+A first-run [onboarding overlay](docs/screenshots/13-onboarding.png) walks new users through the four-step flow, and an always-available feedback widget (`VITE_FEEDBACK_URL`) collects responses.
 
 ---
 
@@ -238,22 +291,40 @@ stellar contract invoke --id $MONITOR --source sentinel-deployer --network testn
 # 3) cross-contract call
 stellar contract invoke --id $MONITOR --source sentinel-deployer --network testnet \
   -- assess --user $DEPLOYER --current_hf_bps 11000
+
+# 4) guardian — bound to the native XLM Stellar Asset Contract
+SAC=$(stellar contract id asset --asset native --network testnet)
+GUARDIAN=$(stellar contract deploy \
+  --wasm contracts/target/wasm32v1-none/release/guardian.wasm \
+  --source sentinel-deployer --network testnet)
+stellar contract invoke --id $GUARDIAN --source sentinel-deployer --network testnet \
+  -- init --admin $DEPLOYER --token $SAC
 ```
 
-Then set `VITE_ALERT_REGISTRY_ID` and `VITE_RISK_MONITOR_ID` in `apps/web/.env`
-(the deployed ids are the defaults).
+Then set `VITE_ALERT_REGISTRY_ID`, `VITE_RISK_MONITOR_ID`, `VITE_GUARDIAN_ID`
+and `VITE_RESERVE_TOKEN_ID` in `apps/web/.env` (the deployed ids are the defaults).
 
 ---
 
 ## Screenshots
 
-### Mobile responsive & desktop
+### Liquidation Guardian (Level 4)
 
-| Mobile dashboard | Desktop dashboard |
+Set a policy, fund a reserve, and trigger non-custodial protection. Guardian activity streams live.
+
+![Liquidation Guardian](docs/screenshots/11-guardian.png)
+
+### Network Activity (on-chain analytics + user-interaction proof)
+
+![Network activity](docs/screenshots/12-analytics.png)
+
+### Onboarding & mobile responsive
+
+| First-run onboarding | Mobile dashboard |
 |---|---|
-| ![Mobile](docs/screenshots/06-mobile-dashboard.png) | ![Desktop](docs/screenshots/08-dashboard-desktop.png) |
+| ![Onboarding](docs/screenshots/13-onboarding.png) | ![Mobile](docs/screenshots/14-mobile-l4.png) |
 
-Full stacked mobile view (all panels): [`07-mobile-full.png`](docs/screenshots/07-mobile-full.png).
+Full stacked mobile view (all panels): [`07-mobile-full.png`](docs/screenshots/07-mobile-full.png) · earlier desktop dashboard: [`08-dashboard-desktop.png`](docs/screenshots/08-dashboard-desktop.png).
 
 ### Multi-wallet picker (Freighter · xBull · Albedo)
 
@@ -309,6 +380,9 @@ VITE_NETWORK_PASSPHRASE=Test SDF Network ; September 2015
 VITE_BLEND_POOL_ID=CCEBVDYM32YNYCVNRXQKDFFPISJJCV557CDZEIRBEE4NCV4KHPQ44HGF
 VITE_ALERT_REGISTRY_ID=CAMPKYYYATXAZQDIPVDGVMPCP53A5BEQYXI3KIP3XO6S5AOUIB3PFNWV
 VITE_RISK_MONITOR_ID=CCLHYNH4GA6IDBNYHSZNKTXIVOPUIFBP3FP43UCCNRHR5RHDSLIQGA5R
+VITE_GUARDIAN_ID=CCBOH4QO4UQ5MR4EJV2VOWOGP3S5J2T5ZPXQHNXSJJKDTVYO7UKQMGTK
+VITE_RESERVE_TOKEN_ID=CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+# VITE_FEEDBACK_URL=https://tally.so/r/your-form-id   # embed your feedback form
 ```
 
 ---
