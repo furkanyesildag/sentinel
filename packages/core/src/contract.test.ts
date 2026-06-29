@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { bpsToPercent, percentToBps, riskLevelFromCode } from './contract.js';
+import {
+  bpsToPercent,
+  percentToBps,
+  riskLevelFromCode,
+  stroopsToXlm,
+  xlmToStroops,
+  STROOPS_PER_XLM,
+} from './contract.js';
 
 describe('bps / percent helpers', () => {
   it('converts bps to percent', () => {
@@ -32,5 +39,28 @@ describe('riskLevelFromCode', () => {
   it('defaults out-of-range codes to Unconfigured', () => {
     expect(riskLevelFromCode(99)).toBe('Unconfigured');
     expect(riskLevelFromCode(-1)).toBe('Unconfigured');
+  });
+});
+
+describe('stroops / XLM helpers', () => {
+  it('uses 1e7 stroops per XLM', () => {
+    expect(STROOPS_PER_XLM).toBe(10_000_000);
+  });
+
+  it('converts stroops to XLM', () => {
+    expect(stroopsToXlm(20_000_000)).toBe(2);
+    expect(stroopsToXlm(0)).toBe(0);
+  });
+
+  it('converts XLM to stroops (rounding)', () => {
+    expect(xlmToStroops(2)).toBe(20_000_000);
+    expect(xlmToStroops(0.5)).toBe(5_000_000);
+    expect(xlmToStroops(1.23456789)).toBe(12_345_679);
+  });
+
+  it('round-trips whole XLM amounts', () => {
+    for (const xlm of [1, 5, 10, 250]) {
+      expect(stroopsToXlm(xlmToStroops(xlm))).toBe(xlm);
+    }
   });
 });

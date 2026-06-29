@@ -18,6 +18,7 @@ import {
   rpc,
   scValToNative,
   TransactionBuilder,
+  xdr,
 } from '@stellar/stellar-sdk';
 import type { AppConfig } from './network.js';
 import { createRpcServer } from './network.js';
@@ -344,4 +345,232 @@ export async function fetchRiskEvents(
   }
 
   throw lastErr instanceof Error ? lastErr : new Error('Failed to load risk events');
+}
+
+/* ── Guardian (liquidation protection) ───────────────────────────────────── */
+
+export interface GuardianPolicy {
+  thresholdBps: number;
+  beneficiary: string;
+  active: boolean;
+}
+
+/** Read a user's protection policy, or null if they have none. */
+export async function readPolicy(config: AppConfig, user: string): Promise<GuardianPolicy | null> {
+  const server = createRpcServer(config);
+  const contract = new Contract(config.guardianId);
+  const source = new Account(user, '0');
+
+  const sim = await simulateView(server, source, config, contract.call('has_policy', Address.fromString(user).toScVal()));
+  if (!sim || safeNative(sim) !== true) return null;
+
+  const policySim = await simulateView(server, source, config, contract.call('get_policy', Address.fromString(user).toScVal()));
+  const raw = safeNative(policySim) as Record<string, unknown> | undefined;
+  if (!raw) return null;
+  return {
+    thresholdBps: Number(raw.threshold_bps ?? 0),
+    beneficiary: String(raw.beneficiary ?? ''),
+    active: Boolean(raw.active),
+  };
+}
+
+/** Read a user's reserve balance in stroops (1 XLM = 10,000,000 stroops). */
+export async function readReserve(config: AppConfig, user: string): Promise<number> {
+  const server = createRpcServer(config);
+  const contract = new Contract(config.guardianId);
+  const source = new Account(user, '0');
+  const sim = await simulateView(server, source, config, contract.call('get_reserve', Address.fromString(user).toScVal()));
+  return Number(safeNative(sim) ?? 0);
+}
+
+async function simulateView(
+  server: rpc.Server,
+  source: Account,
+  config: AppConfig,
+  op: xdr.Operation,
+): Promise<xdr.ScVal | undefined> {
+  const tx = new TransactionBuilder(source, { fee: BASE_FEE, networkPassphrase: config.networkPassphrase })
+    .addOperation(op)
+    .setTimeout(30)
+    .build();
+  const sim = await server.simulateTransaction(tx);
+  if (rpc.Api.isSimulationError(sim)) throw new Error(sim.error);
+  return sim.result?.retval;
+}
+
+export async function buildSetPolicyTx(config: AppConfig, source: string, user: string, thresholdBps: number): Promise<string> {
+  return buildGuardianTx(config, source, 'set_policy', [
+    Address.fromString(user).toScVal(),
+    nativeToScVal(thresholdBps, { type: 'u32' }),
+  ]);
+}
+
+export async function buildFundReserveTx(config: AppConfig, source: string, user: string, amountStroops: number): Promise<string> {
+  return buildGuardianTx(config, source, 'fund_reserve', [
+    Address.fromString(user).toScVal(),
+    nativeToScVal(BigInt(Math.round(amountStroops)), { type: 'i128' }),
+  ]);
+}
+
+export async function buildWithdrawReserveTx(config: AppConfig, source: string, user: string, amountStroops: number): Promise<string> {
+  return buildGuardianTx(config, source, 'withdraw_reserve', [
+    Address.fromString(user).toScVal(),
+    nativeToScVal(BigInt(Math.round(amountStroops)), { type: 'i128' }),
+  ]);
+}
+
+export async function buildProtectTx(config: AppConfig, source: string, user: string, currentHfBps: number): Promise<string> {
+  return buildGuardianTx(config, source, 'protect', [
+    Address.fromString(user).toScVal(),
+    nativeToScVal(currentHfBps, { type: 'u32' }),
+  ]);
+}
+
+async function buildGuardianTx(config: AppConfig, source: string, fn: string, args: xdr.ScVal[]): Promise<string> {
+  const server = createRpcServer(config);
+  const account = await loadSourceAccount(server, source);
+  const contract = new Contract(config.guardianId);
+  const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: config.networkPassphrase })
+    .addOperation(contract.call(fn, ...args))
+    .setTimeout(30)
+    .build();
+  const prepared = await server.prepareTransaction(tx);
+  return prepared.toXDR();
+}
+
+export interface GuardianEvent {
+  type: 'policy' | 'funded' | 'withdrawn' | 'protected';
+  user: string;
+  amount: number | null;
+  ledger: number;
+  txHash: string;
+  createdAt: string;
+}
+
+const GUARDIAN_ACTIONS: Record<string, GuardianEvent['type']> = {
+  policy: 'policy',
+  funded: 'funded',
+  withdrawn: 'withdrawn',
+  protected: 'protected',
+};
+
+/** Fetch recent guardian events (policy / funded / withdrawn / protected). */
+export async function fetchGuardianEvents(config: AppConfig, opts: { limit?: number } = {}): Promise<GuardianEvent[]> {
+  const server = createRpcServer(config);
+  const limit = opts.limit ?? 15;
+  const { sequence } = await server.getLatestLedger();
+  const lookbacks = [9000, 4000, 1500, 400];
+  let lastErr: unknown;
+
+  for (const lookback of lookbacks) {
+    const startLedger = Math.max(sequence - lookback, 1);
+    try {
+      const resp = await server.getEvents({
+        startLedger,
+        filters: [{ type: 'contract', contractIds: [config.guardianId] }],
+        limit,
+      });
+      return resp.events
+        .map((ev): GuardianEvent | null => {
+          const topics = ev.topic.map(safeNative);
+          const action = GUARDIAN_ACTIONS[String(topics[1] ?? '')];
+          const user = typeof topics[2] === 'string' ? topics[2] : '';
+          if (!action || !user) return null;
+          const data = safeNative(ev.value);
+          let amount: number | null = null;
+          if (data && typeof data === 'object') {
+            const d = data as Record<string, unknown>;
+            amount = d.amount != null ? Number(d.amount) : null;
+          } else if (typeof data === 'bigint' || typeof data === 'number') {
+            amount = Number(data);
+          }
+          return { type: action, user, amount, ledger: ev.ledger, txHash: ev.txHash, createdAt: ev.ledgerClosedAt };
+        })
+        .filter((e): e is GuardianEvent => e !== null)
+        .reverse();
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error('Failed to load guardian events');
+}
+
+/* ── Network activity (analytics + user-interaction proof) ───────────────── */
+
+export interface ActivityItem {
+  contract: 'alert_registry' | 'risk_monitor' | 'guardian';
+  label: string;
+  user: string;
+  txHash: string;
+  ledger: number;
+  createdAt: string;
+}
+
+export interface ActivityStats {
+  /** Distinct wallet addresses that have interacted with any contract. */
+  uniqueWallets: number;
+  /** Distinct on-chain transactions across the contracts. */
+  totalTransactions: number;
+  /** Total decoded contract events. */
+  totalEvents: number;
+  byContract: { alert_registry: number; risk_monitor: number; guardian: number };
+  wallets: string[];
+  recent: ActivityItem[];
+}
+
+/**
+ * Aggregate recent activity across all Sentinel contracts into network stats.
+ * The unique-wallet count is real, on-chain proof of distinct user interactions.
+ */
+export async function fetchActivityStats(config: AppConfig, opts: { limit?: number } = {}): Promise<ActivityStats> {
+  const limit = opts.limit ?? 60;
+  const [thresholds, risks, guardians] = await Promise.allSettled([
+    fetchThresholdEvents(config, { limit }),
+    fetchRiskEvents(config, { limit }),
+    fetchGuardianEvents(config, { limit }),
+  ]);
+
+  const items: ActivityItem[] = [];
+  if (thresholds.status === 'fulfilled') {
+    for (const e of thresholds.value) {
+      items.push({ contract: 'alert_registry', label: e.type === 'set' ? 'Threshold set' : 'Threshold removed', user: e.user, txHash: e.txHash, ledger: e.ledger, createdAt: e.createdAt });
+    }
+  }
+  if (risks.status === 'fulfilled') {
+    for (const e of risks.value) {
+      items.push({ contract: 'risk_monitor', label: e.type === 'alert' ? `Alert · ${e.level}` : `Risk · ${e.level}`, user: e.user, txHash: e.txHash, ledger: e.ledger, createdAt: e.createdAt });
+    }
+  }
+  if (guardians.status === 'fulfilled') {
+    for (const e of guardians.value) {
+      const label = e.type === 'protected' ? 'Protected' : e.type === 'funded' ? 'Reserve funded' : e.type === 'withdrawn' ? 'Reserve withdrawn' : 'Policy set';
+      items.push({ contract: 'guardian', label, user: e.user, txHash: e.txHash, ledger: e.ledger, createdAt: e.createdAt });
+    }
+  }
+
+  const wallets = Array.from(new Set(items.map((i) => i.user).filter(Boolean)));
+  const txs = new Set(items.map((i) => i.txHash));
+  const recent = items.sort((a, b) => b.ledger - a.ledger).slice(0, 20);
+
+  return {
+    uniqueWallets: wallets.length,
+    totalTransactions: txs.size,
+    totalEvents: items.length,
+    byContract: {
+      alert_registry: items.filter((i) => i.contract === 'alert_registry').length,
+      risk_monitor: items.filter((i) => i.contract === 'risk_monitor').length,
+      guardian: items.filter((i) => i.contract === 'guardian').length,
+    },
+    wallets,
+    recent,
+  };
+}
+
+/** Stroops <-> XLM helpers. */
+export const STROOPS_PER_XLM = 10_000_000;
+export function stroopsToXlm(stroops: number): number {
+  return stroops / STROOPS_PER_XLM;
+}
+export function xlmToStroops(xlm: number): number {
+  return Math.round(xlm * STROOPS_PER_XLM);
 }

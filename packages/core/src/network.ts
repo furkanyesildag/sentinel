@@ -11,6 +11,10 @@ export interface AppConfig {
   alertRegistryId: string;
   /** Deployed `risk_monitor` contract id — reads alert_registry cross-contract. */
   riskMonitorId: string;
+  /** Deployed `guardian` contract id — opt-in liquidation protection. */
+  guardianId: string;
+  /** Reserve asset contract (native XLM Stellar Asset Contract). */
+  reserveTokenId: string;
   explorerBaseUrl: string;
 }
 
@@ -31,6 +35,12 @@ export function loadConfigFromEnv(env: Record<string, string | undefined>): AppC
     riskMonitorId:
       env.VITE_RISK_MONITOR_ID ??
       'CCLHYNH4GA6IDBNYHSZNKTXIVOPUIFBP3FP43UCCNRHR5RHDSLIQGA5R',
+    guardianId:
+      env.VITE_GUARDIAN_ID ??
+      'CCBOH4QO4UQ5MR4EJV2VOWOGP3S5J2T5ZPXQHNXSJJKDTVYO7UKQMGTK',
+    reserveTokenId:
+      env.VITE_RESERVE_TOKEN_ID ??
+      'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC',
     explorerBaseUrl:
       env.VITE_EXPLORER_BASE_URL ?? 'https://stellar.expert/explorer/testnet',
   };
@@ -48,6 +58,7 @@ export function validateConfig(config: AppConfig): string[] {
 
   if (!isContractId(config.alertRegistryId)) warnings.push(`alertRegistryId "${config.alertRegistryId}" is not a valid contract id`);
   if (!isContractId(config.riskMonitorId)) warnings.push(`riskMonitorId "${config.riskMonitorId}" is not a valid contract id`);
+  if (!isContractId(config.guardianId)) warnings.push(`guardianId "${config.guardianId}" is not a valid contract id`);
   if (!isContractId(config.blendPoolId)) warnings.push(`blendPoolId "${config.blendPoolId}" is not a valid contract id`);
   if (!isUrl(config.sorobanRpcUrl)) warnings.push('sorobanRpcUrl must be an http(s) URL');
   if (!isUrl(config.horizonUrl)) warnings.push('horizonUrl must be an http(s) URL');
