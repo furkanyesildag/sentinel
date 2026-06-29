@@ -514,6 +514,8 @@ export interface ActivityStats {
   /** Total decoded contract events. */
   totalEvents: number;
   byContract: { alert_registry: number; risk_monitor: number; guardian: number };
+  /** Count of guardian Protected events (reserve releases). */
+  protections: number;
   wallets: string[];
   recent: ActivityItem[];
 }
@@ -561,6 +563,7 @@ export async function fetchActivityStats(config: AppConfig, opts: { limit?: numb
       risk_monitor: items.filter((i) => i.contract === 'risk_monitor').length,
       guardian: items.filter((i) => i.contract === 'guardian').length,
     },
+    protections: items.filter((i) => i.contract === 'guardian' && i.label === 'Protected').length,
     wallets,
     recent,
   };

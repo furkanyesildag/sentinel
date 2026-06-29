@@ -64,7 +64,7 @@ export function ActivityPanel() {
         <Stat label="Unique wallets" value={stats ? stats.uniqueWallets : '—'} accent />
         <Stat label="Transactions" value={stats ? stats.totalTransactions : '—'} />
         <Stat label="Events" value={stats ? stats.totalEvents : '—'} />
-        <Stat label="Protections" value={stats ? stats.byContract.guardian : '—'} />
+        <Stat label="Protections" value={stats ? stats.protections : '—'} />
       </div>
 
       {error && !stats && (
