@@ -27,6 +27,20 @@
       "explorer": "https://stellar.expert/explorer/testnet/contract/CCLHYNH4GA6IDBNYHSZNKTXIVOPUIFBP3FP43UCCNRHR5RHDSLIQGA5R",
       "deployedAt": "2026-06-25",
       "note": "assess() performs an inter-contract call into alert_registry.get_threshold and emits RiskAssessed + AlertTriggered events."
+    },
+    "guardian": {
+      "contractId": "CCBOH4QO4UQ5MR4EJV2VOWOGP3S5J2T5ZPXQHNXSJJKDTVYO7UKQMGTK",
+      "wasmHash": "5e6f16a8ef020d20c6eb04b6084f6740bceb3ec65ebff0a30c91b859bfd4e45f",
+      "reserveToken": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+      "transactions": {
+        "create": "b80966612e33f461fb9c2eb6a50bd732b21927a7082a5254a4ec9d7e5339df35",
+        "init": "cc8670a78996d965cb85ca5c4f03c452a8f6dff65fd51de9f3f3a123623e1652",
+        "setPolicy": "f5663bb98f937348b941fd221b190201f39a8fa6623946eadad0469d345f0bbb",
+        "protectCall": "ceb5b5e2a151207c8a690371bde61edbb6fc6678978114ace628532f2ef0bbf1"
+      },
+      "explorer": "https://stellar.expert/explorer/testnet/contract/CCBOH4QO4UQ5MR4EJV2VOWOGP3S5J2T5ZPXQHNXSJJKDTVYO7UKQMGTK",
+      "deployedAt": "2026-06-26",
+      "note": "Non-custodial liquidation protection. Reserve held in the native XLM SAC; protect() releases it to the policy beneficiary when current_hf_bps < threshold_bps. The protectCall tx released a 2 XLM reserve and emitted Protected."
     }
   }
 }

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["alert_registry", "risk_monitor"]
+members = ["alert_registry", "risk_monitor", "guardian"]
 
 [workspace.package]
 version = "0.0.0"
